@@ -10,7 +10,11 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.tasks.CancellationTokenSource
+import io.mobinity.wantact.aop_part4_chapter06.data.Repository
 import io.mobinity.wantact.aop_part4_chapter06.databinding.ActivityMainBinding
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 
 
 class MainActivity : AppCompatActivity() {
@@ -20,6 +24,8 @@ class MainActivity : AppCompatActivity() {
 
     private var _binding: ActivityMainBinding? = null
     private val binding get() = _binding!!
+
+    private val scope = MainScope()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,6 +41,7 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
         _binding = null
         cancellationTokenSource?.cancel()
+        scope.cancel()
     }
 
     @SuppressLint("MissingPermission")
@@ -49,19 +56,10 @@ class MainActivity : AppCompatActivity() {
             requestCode == REQUEST_ACCESS_LOCATION_PERMISSIONS &&
                     grantResults[0] == PackageManager.PERMISSION_GRANTED
 
-        if(!locationPermissionGranted) {
+        if (!locationPermissionGranted) {
             finish()
         } else {
-            // fetch data
-            cancellationTokenSource = CancellationTokenSource()
-
-            fusedLocationProviderClient.getCurrentLocation(
-                LocationRequest.PRIORITY_HIGH_ACCURACY,
-                cancellationTokenSource!!.token
-            ).addOnSuccessListener { location ->
-
-            }
-
+            fetchAirQualityData()
         }
     }
 
@@ -78,6 +76,24 @@ class MainActivity : AppCompatActivity() {
             ),
             REQUEST_ACCESS_LOCATION_PERMISSIONS
         )
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun fetchAirQualityData() {
+        // fetch data
+        cancellationTokenSource = CancellationTokenSource()
+
+        fusedLocationProviderClient.getCurrentLocation(
+            LocationRequest.PRIORITY_HIGH_ACCURACY,
+            cancellationTokenSource!!.token
+        ).addOnSuccessListener { location ->
+            scope.launch {
+                val monitoringStation =
+                    Repository.getNearbyMonitoringStation(location.latitude, location.longitude)
+
+
+            }
+        }
     }
 
     companion object {
