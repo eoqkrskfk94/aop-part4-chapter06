@@ -1,6 +1,7 @@
 package io.mobinity.wantact.aop_part4_chapter06.data
 
 import io.mobinity.wantact.aop_part4_chapter06.BuildConfig
+import io.mobinity.wantact.aop_part4_chapter06.data.models.airquality.MeasuredValue
 import io.mobinity.wantact.aop_part4_chapter06.data.models.monitoringstation.MonitoringStation
 import io.mobinity.wantact.aop_part4_chapter06.data.services.AirKoreaApiService
 import io.mobinity.wantact.aop_part4_chapter06.data.services.KakaoLocalApiService
@@ -14,7 +15,7 @@ object Repository {
 
     suspend fun getNearbyMonitoringStation(latitude:Double, longitude: Double) : MonitoringStation? {
         val tmCoordinates = kakaoLocalApiService
-            .getTmCoordinates(latitude, longitude)
+            .getTmCoordinates(longitude, latitude)
             .body()
             ?.documents
             ?.firstOrNull()
@@ -29,6 +30,15 @@ object Repository {
             ?.monitoringStations
             ?.minByOrNull { it.tm ?: Double.MAX_VALUE }
     }
+
+    suspend fun getLatestAirQualityData(stationName: String): MeasuredValue? =
+        airKoreaApiService
+            .getRealtimeAirQualities(stationName)
+            .body()
+            ?.response
+            ?.body
+            ?.measuredValues
+            ?.firstOrNull()
 
     private val kakaoLocalApiService: KakaoLocalApiService by lazy {
         Retrofit.Builder()
